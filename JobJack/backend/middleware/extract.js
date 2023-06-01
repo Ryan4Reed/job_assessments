@@ -1,4 +1,4 @@
-const connectionPool = require("../config/database");
+const connectionPool = require("../setup/db_connect");
 
 const extractMiddleware = async (req, res, next) => {
   try {
