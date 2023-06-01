@@ -60,7 +60,7 @@ const checkIndexExists = async (indexName, tableName) => {
           SELECT 1
           FROM pg_indexes
           WHERE tablename = '${tableName}'
-          AND indexname = 'idx_${indexName}'
+          AND indexname = 'idx_${tableName}_${indexName}'
         );
       `;
     const result = await client.query(query);
@@ -79,7 +79,7 @@ const addIndexToTable = async (columnName, tableName) => {
     }
 
     const client = await connectionPool.connect();
-    const indexName = `idx_${columnName}`;
+    const indexName = `idx_${tableName}_${columnName}`;
     const query = `CREATE INDEX ${indexName} ON ${tableName} (${columnName});`;
     await client.query(query);
     console.log(`Index ${indexName} created successfully.`);
@@ -102,15 +102,14 @@ const indexTable = async (indexesToAdd, existingTable) => {
 };
 
 const checkIfAlreadyParsed = async (tableName) => {
-  connectionPool.query(
-    `SELECT EXISTS (SELECT 1 FROM ${tableName})`,
-    (error, results) => {
-      if (error) {
-        throw error;
-      }
-      return results.rows[0].exists;
-    }
-  );
+  try {
+    const result = await connectionPool.query(
+      `SELECT EXISTS (SELECT 1 FROM ${tableName})`
+    );
+    return result.rows[0].exists;
+  } catch (error) {
+    throw error;
+  }
 };
 
 const parseCsvToTable = async (columnName, tableName) => {
@@ -119,7 +118,7 @@ const parseCsvToTable = async (columnName, tableName) => {
     .on("data", (row) => {
       connectionPool.query(
         `INSERT INTO ${tableName} (${columnName}) VALUES ($1)`,
-        [row.city],
+        [row[columnName]],
         (error, results) => {
           if (error) {
             throw error;
@@ -128,13 +127,16 @@ const parseCsvToTable = async (columnName, tableName) => {
       );
     })
     .on("end", () => {
-      console.log("CSV file successfully processed");
+      console.log(`CSV file successfully processed for ${tableName}`);
     });
 };
 
 const parseCsvAndInsertData = async (columnName, tableName) => {
-  const exists = checkIfAlreadyParsed(tableName);
+  const exists = await checkIfAlreadyParsed(tableName);
+
   if (!exists) {
+    console.log(columnName, tableName);
+
     parseCsvToTable(columnName, tableName);
   }
 };

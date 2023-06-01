@@ -12,7 +12,7 @@ const setup = async () => {
 
   await parseCsvAndInsertData("city", "cities");
   await parseCsvAndInsertData("province", "provinces");
-
+  
   indexObject = [
     {
       table: "jack_location",
