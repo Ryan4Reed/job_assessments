@@ -1,12 +1,6 @@
 const connectionPool = require("../setup/db_connect");
-
-const createNewTable = async (tableName) => {
-  const tableExists = await checkTableExists(tableName);
-  if (!tableExists) {
-    // await createNewTable();
-    console.log(`Table ${tableName} created successfully.`);
-  }
-};
+const fs = require("fs");
+const csv = require("csv-parser");
 
 const checkTableExists = async (table) => {
   try {
@@ -29,12 +23,32 @@ const checkTableExists = async (table) => {
   }
 };
 
-const indexTable = async (indexesToAdd, existingTable) => {
-  for (const indx of indexesToAdd) {
-    const indexExists = await checkIndexExists(indx, existingTable);
-    if (!indexExists) {
-      await addIndexToTable(indx, existingTable);
-    }
+const createNewTable = async (tableName) => {
+  const tableExists = await checkTableExists(tableName);
+  if (!tableExists) {
+    console.log(tableName);
+
+    const sql = fs
+      .readFileSync(`./setup/db_table_schemas/${tableName}.sql`)
+      .toString();
+
+    // Connect to your database
+    connectionPool.connect((err, client, done) => {
+      if (err) {
+        console.error("Error acquiring client", err.stack);
+        throw err;
+      }
+      // Execute the SQL file
+      client.query(sql, (err, res) => {
+        done();
+        if (err) {
+          console.log(err.stack);
+          throw err;
+        } else {
+          console.log(`Table ${tableName} created.`);
+        }
+      });
+    });
   }
 };
 
@@ -78,7 +92,55 @@ const addIndexToTable = async (columnName, tableName) => {
   }
 };
 
+const indexTable = async (indexesToAdd, existingTable) => {
+  for (const indx of indexesToAdd) {
+    const indexExists = await checkIndexExists(indx, existingTable);
+    if (!indexExists) {
+      await addIndexToTable(indx, existingTable);
+    }
+  }
+};
+
+const checkIfAlreadyParsed = async (tableName) => {
+  connectionPool.query(
+    `SELECT EXISTS (SELECT 1 FROM ${tableName})`,
+    (error, results) => {
+      if (error) {
+        throw error;
+      }
+      return results.rows[0].exists;
+    }
+  );
+};
+
+const parseCsvToTable = async (columnName, tableName) => {
+  fs.createReadStream(`./data/${tableName}.csv`)
+    .pipe(csv())
+    .on("data", (row) => {
+      connectionPool.query(
+        `INSERT INTO ${tableName} (${columnName}) VALUES ($1)`,
+        [row.city],
+        (error, results) => {
+          if (error) {
+            throw error;
+          }
+        }
+      );
+    })
+    .on("end", () => {
+      console.log("CSV file successfully processed");
+    });
+};
+
+const parseCsvAndInsertData = async (columnName, tableName) => {
+  const exists = checkIfAlreadyParsed(tableName);
+  if (!exists) {
+    parseCsvToTable(columnName, tableName);
+  }
+};
+
 module.exports = {
   createNewTable,
   indexTable,
+  parseCsvAndInsertData,
 };
