@@ -8,11 +8,13 @@ const setup = async () => {
   await createNewTable("sync_info");
   await createNewTable("cities");
   await createNewTable("provinces");
+  await createNewTable("cities_provinces");
   await createNewTable("jack_location_density");
 
   await parseCsvAndInsertData("city", "cities");
   await parseCsvAndInsertData("province", "provinces");
-  
+  await parseCsvAndInsertData(["city", "province"], "cities_provinces");
+
   indexObject = [
     {
       table: "jack_location",
@@ -32,7 +34,6 @@ const setup = async () => {
     },
   ];
 
-  // add indexes
   for (const item of indexObject) {
     await indexTable(item.indexes, item.table);
   }
