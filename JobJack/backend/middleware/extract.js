@@ -152,6 +152,9 @@ const extractMiddleware = async (req, res, next) => {
       let offset = 0;
       const limit = 10000; // Adjust this number as desired
 
+      // Fetch city-province combinations before entering the loop
+      const citiesToProvinces = await fetchCityProvinceCombinations();
+
       while (true) {
         try {
           // Fetch a chunk of rows from jack_location
@@ -161,8 +164,6 @@ const extractMiddleware = async (req, res, next) => {
             offset
           );
           let updateData = [];
-
-          const citiesToProvinces = await fetchCityProvinceCombinations();
 
           for (let row of jackLocationRows) {
             if (row.full_location) {
@@ -178,6 +179,10 @@ const extractMiddleware = async (req, res, next) => {
           // Batch update using prepared statement
           await updateTable(updateData);
 
+          // If the number of rows fetched is less than the limit, exit the loop
+          if (jackLocationRows.length < limit) {
+            break;
+          }
           offset += limit; // Move to the next chunk
         } catch (err) {
           console.error(err);
@@ -189,7 +194,6 @@ const extractMiddleware = async (req, res, next) => {
 
     next();
   } catch (error) {
-    xc;
     console.log(error);
     res.status(500).json({ error: "Internal server error" });
   }
