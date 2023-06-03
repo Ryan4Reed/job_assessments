@@ -1,123 +1,198 @@
 const connectionPool = require("../setup/db_connect");
+const fs = require("fs");
+const csv = require("csv-parser");
+
+const fetchLastSyncDate = async () => {
+  const syncInfoRes = await connectionPool.query(
+    "SELECT MAX(last_sync_date) FROM sync_info"
+  );
+  let lastSyncDate = syncInfoRes.rows[0].max;
+
+  // If lastSyncDate is null, set it to '2000-01-01'
+  if (!lastSyncDate) {
+    lastSyncDate = "2000-01-01";
+  }
+  return lastSyncDate;
+};
+
+const fetchChunk = async (lastSyncDate, limit, offset) => {
+  const jackLocationRes = await connectionPool.query(
+    `SELECT * FROM jack_location
+       WHERE CAST(sign_up_date AS TIMESTAMP) > $1
+       AND (city IS NULL OR province IS NULL)
+       ORDER BY CAST(sign_up_date AS TIMESTAMP)
+       LIMIT $2 OFFSET $3`,
+    [lastSyncDate, limit, offset]
+  );
+  const jackLocationRows = jackLocationRes.rows;
+
+  return jackLocationRows;
+};
+
+const fetchCityProvinceCombinations = async () => {
+  const citiesRes = await connectionPool.query(
+    `SELECT c.city, p.province
+     FROM cities c
+     JOIN cities_provinces cp ON cp.city_id = c.id
+     JOIN provinces p ON cp.province_id = p.id`
+  );
+  const cities = citiesRes.rows.reduce((obj, row) => {
+    const city = row.city.toLowerCase();
+    const province = row.province.toLowerCase();
+    if (!obj[city]) {
+      obj[city] = [];
+    }
+    obj[city].push(province);
+    return obj;
+  }, {});
+  return cities;
+};
+
+const splitTrimLowerCase = (row) => {
+  const fullLocationParts = row.full_location
+    .split(", ")
+    .map((part) => part.trim().toLowerCase());
+  return fullLocationParts;
+};
+
+const getProvinces = async () => {
+  const exempted = [];
+  await new Promise((resolve, reject) => {
+    fs.createReadStream("./data/provinces.csv")
+      .pipe(csv())
+      .on("data", (data) => {
+        exempted.push(data.province.toLowerCase());
+      })
+      .on("end", () => {
+        resolve();
+      })
+      .on("error", (error) => {
+        reject(error);
+      });
+  });
+
+  return exempted;
+};
+
+const identifyCityProvinceToAdd = async (
+  row,
+  citiesToProvinces,
+  exempted,
+  updateData
+) => {
+  const fullLocationParts = splitTrimLowerCase(row);
+  for (let part of fullLocationParts) {
+    // if part does not contain digits are an exempted string
+    if (!/\d/.test(part) && !exempted.includes(part)) {
+      const provinces = citiesToProvinces[part];
+      if (provinces) {
+        const rowProvince = row.province ? row.province.toLowerCase() : null;
+        if (
+          provinces.includes(rowProvince) ||
+          (provinces.length === 1 && rowProvince === null)
+        ) {
+          const newCity = provinces.length === 1 ? part : row.city;
+          const newProvince =
+            row.province === null ? provinces[0] : row.province;
+
+          updateData.push({
+            city: newCity,
+            province: newProvince,
+            id: row.id,
+          });
+        }
+      }
+    }
+  }
+  return updateData;
+};
+
+const updateTable = async (updateData) => {
+  if (updateData.length > 0) {
+    console.log(updateData);
+
+    // Generate valuesStrs considering null values
+    const valuesStrs = updateData.map(
+      (d) =>
+        `(${d.city ? `'${d.city.replace(/'/g, "''")}'` : "NULL"}, ${
+          d.province ? `'${d.province.replace(/'/g, "''")}'` : "NULL"
+        }, ${d.id})`
+    );
+
+    // Construct a single string where each set of values is separated by a comma
+    const valuesStr = valuesStrs.join(", ");
+
+    // Construct the query string
+    const queryString = `
+              WITH vals (city, province, id) AS (
+                  VALUES ${valuesStr}
+              )
+              UPDATE jack_location
+              SET city = COALESCE(vals.city, jack_location.city), 
+                  province = COALESCE(vals.province, jack_location.province)
+              FROM vals
+              WHERE jack_location.id = vals.id;
+              `;
+
+    // Execute the query
+    await connectionPool.query(queryString);
+  }
+};
 
 const extractMiddleware = async (req, res, next) => {
   try {
-    console.log("query started");
-    const excempted = [
-      "western cape",
-      "eastern cape",
-      "north west",
-      "kwazulu natal",
-      "gauteng",
-      "northern cape",
-      "limpopo",
-      "mpumalanga",
-      "free state",
-    ];
+    console.log(
+      "Query to populate the city and province columns in jack_location started"
+    );
+
+    const exempted = await getProvinces();
+    exempted.push("south africa");
 
     try {
-      // Fetch last sync date
-      const syncInfoRes = await connectionPool.query(
-        "SELECT MAX(last_sync_date) FROM sync_info"
-      );
-      let lastSyncDate = syncInfoRes.rows[0].max;
+      const lastSyncDate = await fetchLastSyncDate();
+      let offset = 0;
+      const limit = 10000; // Adjust this number as desired
 
-      // If lastSyncDate is null, set it to '2000-01-01'
-      if (!lastSyncDate) {
-        lastSyncDate = "2000-01-01";
-      }
-
-      // Fetch months from jack_location where sign_up_date > lastSyncDate
-      const monthsRes = await connectionPool.query(
-        "SELECT DISTINCT DATE_TRUNC('month', CAST(sign_up_date AS TIMESTAMP)) AS month FROM jack_location WHERE CAST(sign_up_date AS TIMESTAMP) > $1 ORDER BY month",
-        [lastSyncDate]
-      );
-      const months = monthsRes.rows;
-      console.log(months);
-
-      for (let month of months) {
-        let offset = 0;
-        const limit = 100; // Adjust this number according to your needs
-
-        while (true) {
-          // Fetch a chunk of rows from jack_location for a specific month
-          const jackLocationRes = await connectionPool.query(
-            `SELECT * FROM jack_location
-                   WHERE DATE_TRUNC('month', CAST(sign_up_date AS TIMESTAMP)) = $1 AND CAST(sign_up_date AS TIMESTAMP) > $2
-                   ORDER BY CAST(sign_up_date AS TIMESTAMP)
-                   LIMIT $3 OFFSET $4`,
-            [month.month, lastSyncDate, limit, offset]
+      while (true) {
+        try {
+          // Fetch a chunk of rows from jack_location
+          const jackLocationRows = await fetchChunk(
+            lastSyncDate,
+            limit,
+            offset
           );
-          const jackLocationRows = jackLocationRes.rows;
+          let updateData = [];
 
-          if (jackLocationRows.length === 0) {
-            break; // No more rows for this month
-          }
+          const citiesToProvinces = await fetchCityProvinceCombinations();
+
           for (let row of jackLocationRows) {
             if (row.full_location) {
-              const fullLocationParts = row.full_location.split(", ");
-
-              for (let part of fullLocationParts) {
-                // Trim part and check if it is a city
-                const trimmedPart = part.trim().toLowerCase();
-                console.log(trimmedPart);
-                if (
-                  !/\d/.test(trimmedPart) &&
-                  !excempted.includes(trimmedPart)
-                ) {
-                  const cityRes = await connectionPool.query(
-                    "SELECT * FROM cities WHERE city = $1",
-                    [trimmedPart]
-                  );
-
-                  const cityRows = cityRes.rows;
-                  console.log(cityRows);
-
-                  // if (cityRows.length > 0) {
-                  //   // Check province correspondence
-                  //   const cityId = cityRows[0].id;
-                  //   const citiesProvincesRes = await connectionPool.query(
-                  //     "SELECT * FROM cities_provinces WHERE city = $1",
-                  //     [cityId]
-                  //   );
-                  //   const citiesProvincesRow = citiesProvincesRes.rows[0];
-
-                  //   if (citiesProvincesRow) {
-                  //     const provinceId = citiesProvincesRow.province;
-                  //     const provinceRes = await connectionPool.query(
-                  //       "SELECT * FROM provinces WHERE id = $1",
-                  //       [provinceId]
-                  //     );
-                  //     const provinceRow = provinceRes.rows[0];
-
-                  //     if (
-                  //       provinceRow &&
-                  //       fullLocationParts.includes(provinceRow.province)
-                  //     ) {
-                  //       console.log(
-                  //         `Matched city: ${part}, province: ${provinceRow.province}`
-                  //       );
-                  //     }
-                  //   }
-                  // }
-                }
-              }
+              updateData = await identifyCityProvinceToAdd(
+                row,
+                citiesToProvinces,
+                exempted,
+                updateData
+              );
             }
           }
 
+          // Batch update using prepared statement
+          await updateTable(updateData);
+
           offset += limit; // Move to the next chunk
+        } catch (err) {
+          console.error(err);
         }
       }
     } catch (err) {
       console.error(err);
-    } finally {
-      await connectionPool.end();
     }
 
     next();
   } catch (error) {
+    xc;
     console.log(error);
-    res.status(500).json({ error });
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 

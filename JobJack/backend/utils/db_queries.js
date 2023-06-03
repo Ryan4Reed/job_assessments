@@ -2,6 +2,31 @@ const connectionPool = require("../setup/db_connect");
 const fs = require("fs");
 const csv = require("csv-parser");
 
+const executeAlterTableQuery = async (tableName) => {
+  try {
+    const checkColumnQuery = `
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_name = '${tableName}'
+        AND column_name = 'id'
+    `;
+
+    const { rowCount } = await connectionPool.query(checkColumnQuery);
+
+    if (rowCount === 0) {
+      const alterTableQuery = `
+        ALTER TABLE ${tableName}
+        ADD COLUMN id SERIAL PRIMARY KEY
+      `;
+
+      await connectionPool.query(alterTableQuery);
+      console.log(`id column added to ${tableName}`);
+    }
+  } catch (error) {
+    console.error("An error occurred:", error);
+  }
+};
+
 const checkTableExists = async (table) => {
   try {
     if (table === undefined) {
@@ -175,4 +200,5 @@ module.exports = {
   createNewTable,
   indexTable,
   parseCsvAndInsertData,
+  executeAlterTableQuery,
 };

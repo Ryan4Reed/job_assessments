@@ -2,9 +2,11 @@ const {
   createNewTable,
   indexTable,
   parseCsvAndInsertData,
+  executeAlterTableQuery,
 } = require("../utils/db_queries");
 
 const setup = async () => {
+  await executeAlterTableQuery("jack_location");
   await createNewTable("sync_info");
   await createNewTable("cities");
   await createNewTable("provinces");
