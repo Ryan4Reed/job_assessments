@@ -91,9 +91,8 @@ const identifyCityProvinceToAdd = async (
           provinces.includes(rowProvince) ||
           (provinces.length === 1 && rowProvince === null)
         ) {
-          const newCity = provinces.length === 1 ? part : row.city;
-          const newProvince =
-            row.province === null ? provinces[0] : row.province;
+          const newCity = row.city === null ? part : row.city;
+          const newProvince = rowProvince === null ? provinces[0] : rowProvince;
 
           updateData.push({
             city: newCity,
