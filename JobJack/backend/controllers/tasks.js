@@ -1,5 +1,5 @@
 const etlController = async (req, res) => {
-  res.status(200).json(res.locals.data.rows);
+  res.status(200).json({msg: 'ETL pipeline executed successfuly'});
 };
 
 module.exports = {
