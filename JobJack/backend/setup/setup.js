@@ -1,12 +1,12 @@
 const {
   createNewTable,
   indexTable,
-  parseCsvAndInsertData,
-  executeAlterTableQuery,
+  addPrimaryIdColumn,
 } = require("../utils/db_queries");
+const {parseCsvAndInsertData} = require('./submodules/db_queries')
 
 const setup = async () => {
-  await executeAlterTableQuery("jack_location");
+  await addPrimaryIdColumn("jack_location");
   await createNewTable("sync_info");
   await createNewTable("cities");
   await createNewTable("provinces");

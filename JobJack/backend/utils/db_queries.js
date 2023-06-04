@@ -2,7 +2,7 @@ const connectionPool = require("../setup/db_connect");
 const fs = require("fs");
 const csv = require("csv-parser");
 
-const executeAlterTableQuery = async (tableName) => {
+const addPrimaryIdColumn = async (tableName) => {
   try {
     const checkColumnQuery = `
       SELECT 1
@@ -196,9 +196,70 @@ const parseCsvAndInsertData = async (columnName, tableName) => {
   }
 };
 
+const fetchLastSyncDate = async () => {
+  try {
+    const syncInfoRes = await connectionPool.query(
+      "SELECT MAX(last_sync_date) FROM sync_info"
+    );
+    let lastSyncDate = syncInfoRes.rows[0].max;
+
+    if (!lastSyncDate) {
+      lastSyncDate = "2000-01-01";
+    }
+    console.log(`Successfully fetched last_sync_date: ${lastSyncDate}`);
+    return lastSyncDate;
+  } catch (error) {
+    console.log(
+      `An error occured while fetching the last_sync_date: ${error.message}`
+    );
+    throw error;
+  }
+};
+
+const addNewSyncDate = async () => {
+  const queryString = 'INSERT INTO sync_info (last_sync_date) VALUES (CURRENT_DATE)';
+
+  await connectionPool.query(queryString)
+}
+
+
+const fetchCityProvinceCombinations = async () => {
+  try {
+    const citiesRes = await connectionPool.query(
+      `SELECT c.city, p.province
+       FROM cities c
+       JOIN cities_provinces cp ON cp.city_id = c.id
+       JOIN provinces p ON cp.province_id = p.id`
+    );
+    const cities = citiesRes.rows.reduce((obj, row) => {
+      const city = row.city.toLowerCase();
+      const province = row.province.toLowerCase();
+      if (!obj[city]) {
+        obj[city] = [];
+      }
+      obj[city].push(province);
+      return obj;
+    }, {});
+
+    console.log("Successfully fetched city to province combinations");
+
+    return cities;
+  } catch (error) {
+    console.error(
+      `An error occurred while fetching city-province combinations: ${error.message}`
+    );
+    throw error;
+  }
+};
+
+
 module.exports = {
   createNewTable,
   indexTable,
   parseCsvAndInsertData,
-  executeAlterTableQuery,
+  addPrimaryIdColumn,
+  checkIfAlreadyParsed,
+  fetchCityProvinceCombinations,
+  fetchLastSyncDate,
+  addNewSyncDate
 };
