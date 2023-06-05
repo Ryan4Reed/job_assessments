@@ -7,13 +7,14 @@ const populateJackLDensityMiddleware = async (req, res, next) => {
     await runUpdate();
     console.log("Query to populate jack_location_density completed");
     await addNewSyncDate();
+    console.log("Successfully added new sync date");
+    next();
   } catch (error) {
     console.log(
       `An error occurd while executing the query to populate jack_location_density: ${error.message}`
     );
     throw error;
   }
-  next();
 };
 
 module.exports = populateJackLDensityMiddleware;
