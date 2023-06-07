@@ -1,59 +1,56 @@
-<h1>Backend Application for JobJack Assessment</h1>
+# Backend Application for JobJack Assessment
 
-<p>This is the backend application for the JobJack Assessment. It provides an API for handling CSV data processing and database operations.</p>
+This is the backend application for the JobJack Assessment. It provides an API for handling CSV data processing and database operations.
 
-<h2>Installation</h2>
+## Installation
 
-<ol>
-  <li>Clone the repository:</li>
-  <pre><code>git clone &lt;repository_url&gt;</code></pre>
-  
-  <li>Install the dependencies:</li>
-  <pre><code>npm install</code></pre>
-  
-  <li>Set up the environment variables:</li>
-  
-  <ul>
-    <li>Create a <code>.env</code> file in the root directory of the project.</li>
-    <li>Define the required environment variables in the <code>.env</code> file. For example:</li>
-    <pre><code>DB_HOST=localhost
-DB_USER=myusername
-DB_PASSWORD=mypassword</code></pre>
-  </ul>
-  
-  <li>Start the application:</li>
-  <pre><code>npm start</code></pre>
-  <p>This will start the backend application using <a href="https://nodemon.io/">Nodemon</a> for automatic restarts on file changes.</p>
-</ol>
+1. Clone the repository:
 
-<h2>API Endpoints</h2>
+   - git clone <repository_url>
 
-<ul>
-  <li><strong>POST /upload</strong>: Uploads a CSV file for processing. The file should be sent as a form-data field named <code>file</code>.</li>
-  <li><strong>GET /data</strong>: Retrieves the processed data from the database.</li>
-</ul>
+2. Install the dependencies:
 
-<h2>Dependencies</h2>
+   - npm install
 
-<ul>
-  <li><a href="https://www.npmjs.com/package/csv-parser">csv-parser</a>: CSV parsing library for Node.js.</li>
-  <li><a href="https://www.npmjs.com/package/dotenv">dotenv</a>: Loads environment variables from a <code>.env</code> file.</li>
-  <li><a href="https://expressjs.com/">express</a>: Web application framework for Node.js.</li>
-  <li><a href="https://www.npmjs.com/package/express-rate-limit">express-rate-limit</a>: Middleware for rate limiting HTTP requests.</li>
-  <li><a href="https://www.npmjs.com/package/fast-csv">fast-csv</a>: CSV parsing and formatting library for Node.js.</li>
-  <li><a href="https://www.npmjs.com/package/pg">pg</a>: PostgreSQL database client for Node.js.</li>
-</ul>
+3. Set up the environment variables:
 
-<h2>Development Dependencies</h2>
+- Create a `.env` file in the root directory of the project.
+- Define the required environment variables in the `.env` file. For example:
+  ```
+  DB_HOST=localhost
+  DB_USER=myusername
+  DB_PASSWORD=mypassword
+  DATABASE=databasename
+  PORT=localport
+  ```
 
-<ul>
-  <li><a href="https://nodemon.io/">nodemon</a>: Development utility that automatically restarts the application on file changes.</li>
-</ul>
+4. Start the application:
 
-<h2>License</h2>
+   - npm start
 
-<p>This project is licensed under the <a href="LICENSE">ISC License</a>.</p>
+This will start the backend application using [Nodemon](https://nodemon.io/) for automatic restarts on file changes.
 
-<h2>Contact</h2>
+## API Endpoints
 
-<p>For any inquiries or support, please contact Ryan Reed at ryan4reed@gmail.com.</p>
+- **POST /etl**: Trigges the etl pipeline.
+
+## Dependencies
+
+- [csv-parser](https://www.npmjs.com/package/csv-parser): CSV parsing library for Node.js.
+- [dotenv](https://www.npmjs.com/package/dotenv): Loads environment variables from a `.env` file.
+- [express](https://expressjs.com/): Web application framework for Node.js.
+- [express-rate-limit](https://www.npmjs.com/package/express-rate-limit): Middleware for rate limiting HTTP requests.
+- [fast-csv](https://www.npmjs.com/package/fast-csv): CSV parsing and formatting library for Node.js.
+- [pg](https://www.npmjs.com/package/pg): PostgreSQL database client for Node.js.
+
+## Development Dependencies
+
+- [nodemon](https://nodemon.io/): Development utility that automatically restarts the application on file changes.
+
+## License
+
+This project is licensed under the [ISC License](LICENSE).
+
+## Contact
+
+For any inquiries or support, please contact Ryan Reed at ryan4reed@gmail.com.
