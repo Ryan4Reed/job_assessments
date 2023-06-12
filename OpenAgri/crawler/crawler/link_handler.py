@@ -1,8 +1,10 @@
 from config.settings import INCLUDE_EXTERNAL, ROOT_URL
+
 class LinkHandler:
     def __init__(self):
         self.link_memory = set()
         self.include_external = INCLUDE_EXTERNAL
+        
     def process_links(self, links):
         """Extract and store unique and approved links from a list of links."""
         unique_links = []

@@ -2,5 +2,6 @@
 ROOT_URL = 'https://www.news24.com/'
 ROBOTSTXT_URL = 'https://www.example.com/robots.txt'
 SITEMAP_URL = 'https://www.example.com/sitemap.xml'
-MAX_PAGES = 10
+MAX_PAGES = 1000
 INCLUDE_EXTERNAL = False
+NUM_PROCESSES = 10

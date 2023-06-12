@@ -4,8 +4,9 @@ class QueueManager:
     def __init__(self):
         self.queue = deque()
 
-    def add_to_queue(self, url):
-        self.queue.append(url)
+    def add_to_queue(self, urls):
+        for url in urls:
+            self.queue.append(url)
 
     def get_next_url(self):
         return self.queue.popleft()
