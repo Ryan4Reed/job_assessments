@@ -2,3 +2,4 @@ __pycache__/
 pages/
 launch.json
 crawler.log
+.env

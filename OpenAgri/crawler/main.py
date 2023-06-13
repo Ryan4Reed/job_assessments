@@ -9,6 +9,8 @@ from crawler.storage import Storage
 from config import settings
 from crawler.crawl_pages import crawl
 from crawler.extract_useful_data import parse_html_for_useful_data
+from setup import setup
+
 def main():
     # Load configuration
     config = Config()
@@ -30,13 +32,14 @@ def main():
     # Initialise crawler
     # crawl(fetcher, parser, link_handler, queue_manager, storage, config, settings)
     
+    setup()
+
     names = ['breadcrumb', 
          'description', 
          'keywords', 
          'accreditation',
          'author', 
          'articletitle', 
-         'creditline',
          'publisheddate', 
          'datemodified', 
          'pagetype']

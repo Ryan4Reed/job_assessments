@@ -1,18 +1,5 @@
 import os
-import psycopg2
 from bs4 import BeautifulSoup
-
-# # setup connection
-# conn = psycopg2.connect(
-#     dbname="openagri_db",
-#     user="postgres",
-#     password="openpass",
-#     host="localhost",
-#     port="5454"
-# )
-
-# # get a cursor object used to execute SQL commands
-# cur = conn.cursor()
 
 def parse_html(file, names):
     with open(file, 'r') as f:
