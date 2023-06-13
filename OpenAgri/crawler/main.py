@@ -8,7 +8,7 @@ from crawler.queue_manager import QueueManager
 from crawler.storage import Storage
 from config import settings
 from crawler.crawl_pages import crawl
-
+from crawler.extract_useful_data import parse_html_for_useful_data
 def main():
     # Load configuration
     config = Config()
@@ -28,7 +28,20 @@ def main():
     queue_manager.add_to_queue([root_url])
 
     # Initialise crawler
-    crawl(fetcher, parser, link_handler, queue_manager, storage, config)
+    # crawl(fetcher, parser, link_handler, queue_manager, storage, config, settings)
     
+    names = ['breadcrumb', 
+         'description', 
+         'keywords', 
+         'accreditation',
+         'author', 
+         'articletitle', 
+         'creditline',
+         'publisheddate', 
+         'datemodified', 
+         'pagetype']
+
+    parse_html_for_useful_data('pages', names)
+
 if __name__ == '__main__':
     main()

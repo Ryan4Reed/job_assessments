@@ -1,3 +1,4 @@
+import re
 from config.settings import INCLUDE_EXTERNAL, ROOT_URL
 
 class LinkHandler:
@@ -17,7 +18,17 @@ class LinkHandler:
 
     def get_processed_link(self, link):
         """Process a link based on whether it is external and return the processed link."""
-        if 'https://www' in link:
+        if 'https://' in link:
             return link if self.include_external else None
 
         return ROOT_URL + link
+    
+    def has_date_tag(self, url):
+        # This regular expression will match any sequence of eight digits.
+        pattern = r'\b\d{8}\b'
+        # Search for the pattern
+        match = re.search(pattern, url)
+        
+        if match is not None:
+            return True
+        return False
