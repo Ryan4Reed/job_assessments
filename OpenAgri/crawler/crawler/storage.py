@@ -5,7 +5,7 @@ import logging
 class Storage:
     def __init__(self):
         self.pages_folder = 'pages'
-        self.meta_info = []
+        self.meta_info = {}
         self.pages = 0
     def save_page(self, html_content, filename):
         try:

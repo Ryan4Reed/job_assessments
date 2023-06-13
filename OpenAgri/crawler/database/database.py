@@ -15,16 +15,23 @@ class Database:
         self.cursor = self.conn.cursor()
 
     def create_table(self, sql_file):
-        with open(sql_file, 'r') as file:
-            self.cursor.execute(file.read())
-        self.conn.commit()
+        try:
+            with open(sql_file, 'r') as file:
+                self.cursor.execute(file.read())
+            self.conn.commit()
+            print('Db table created')
+        except (psycopg2.Error, FileNotFoundError) as e:
+            print(f"Error creating table: {e}")
+            self.conn.rollback()  
 
-    def insert_into_table(self, table_name, data):
-        columns = ', '.join(data.keys())
-        placeholders = ', '.join(['%s'] * len(data))
-        sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
-        self.cursor.execute(sql, list(data.values()))
-        self.conn.commit()
+    def insert_into_table(self, query, data):
+        try:
+            self.cursor.execute(query, data)
+            self.conn.commit()
+        except psycopg2.Error as e:
+            print(f"Error inserting into table: {e}")
+            self.conn.rollback()  
+
 
     def close(self):
         self.cursor.close()

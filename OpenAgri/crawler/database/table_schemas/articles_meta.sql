@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS articles_meta (
     id SERIAL PRIMARY KEY,
-    url TEXT,
+    url TEXT UNIQUE,
     breadcrumb VARCHAR(255),
     description TEXT,
     keywords TEXT,
@@ -11,3 +11,5 @@ CREATE TABLE IF NOT EXISTS articles_meta (
     datemodified TIMESTAMP,
     pagetype VARCHAR(50)
 );
+
+CREATE INDEX idx_url ON articles_meta (url);
