@@ -1,5 +1,4 @@
 import logging
-logging.basicConfig(filename='./logs/crawler.log', level=logging.INFO)
 from config.config import Config
 from crawler.fetcher import Fetcher
 from crawler.parser import Parser
@@ -12,46 +11,46 @@ from crawler.extract_useful_data import parse_html_for_useful_data
 from database.database import Database
 from setup import setup
 from utils.files import clear_directory
+
+logging.basicConfig(filename='./logs/crawler.log', level=logging.INFO)
+
 def main():
-    # Load configuration
-    config = Config()
-    config.update_config(max_pages=settings.MAX_PAGES,
-                         num_processes=settings.NUM_PROCESSES)
+    try:
+        # Load configuration
+        config = Config()
+        config.update_config(max_pages=settings.MAX_PAGES,
+                            num_processes=settings.NUM_PROCESSES,
+                            include_external=settings.INCLUDE_EXTERNAL)
 
-    # Initialize components
-    fetcher = Fetcher()
-    parser = Parser()
-    link_handler = LinkHandler()
-    queue_manager = QueueManager()
-    storage = Storage()
-    database = Database()
-    logging.info('Components initialised')
+        # Initialize parser components
+        fetcher = Fetcher()
+        parser = Parser()
+        link_handler = LinkHandler()
+        queue_manager = QueueManager()
+        storage = Storage()
 
-    # Setup database
-    setup(database)
+        logging.info('Parser components initialised')
 
-    # Start with the root URL
-    root_url = settings.ROOT_URL
-    queue_manager.add_to_queue([root_url])
+        # Setup database
+        database = Database()
+        setup(database)
+        
+        logging.info('Database setup successful')
 
-    # Clear pages folder
-    folder_path = "pages"
-    clear_directory(folder_path)
+        # Clear pages folder
+        folder_path = "pages"
+        clear_directory(folder_path)
 
-    # Initialise crawler
-    crawl(fetcher, parser, link_handler, queue_manager, storage, config, settings)
+        # Initialise crawler
+        crawl(fetcher, parser, link_handler, queue_manager, storage, config, settings)
 
-    names = ['breadcrumb', 
-         'description', 
-         'keywords', 
-         'accreditation',
-         'author', 
-         'articletitle', 
-         'publisheddate', 
-         'datemodified', 
-         'pagetype']
+        # Extract info for crawled pages
+        parse_html_for_useful_data('pages', settings.META_TAGS, parser, database)
 
-    parse_html_for_useful_data('pages', names, parser, database)
+    except Exception as e:
+        logging.error(f"An error occurred in the main function: {e}")
+        raise
+
 
 if __name__ == '__main__':
     main()

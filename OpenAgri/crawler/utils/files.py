@@ -4,6 +4,11 @@ import shutil
 import logging
 
 def clear_directory(directory_path):
+    """
+    Clear the contents of a directory.
+
+    :param directory_path: The path to the directory to be cleared.
+    """
     print('Clearing pages folder')
     if os.path.exists(directory_path):
         files = glob.glob(directory_path + '/*')

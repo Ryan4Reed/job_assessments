@@ -3,6 +3,9 @@ import os
 from dotenv import load_dotenv
 
 class Database:
+    """
+    This class provides methods for interacting with a PostgreSQL database.
+    """
     def __init__(self):
         load_dotenv()
         self.conn = psycopg2.connect(
@@ -15,6 +18,11 @@ class Database:
         self.cursor = self.conn.cursor()
 
     def create_table(self, sql_file):
+        """
+        Create a database table using SQL statements from a file.
+
+        :param sql_file: The path to the SQL file containing the table creation statements.
+        """
         try:
             with open(sql_file, 'r') as file:
                 self.cursor.execute(file.read())
@@ -25,6 +33,12 @@ class Database:
             self.conn.rollback()  
 
     def insert_into_table(self, query, data):
+        """
+        Execute an INSERT query to insert data into a database table.
+
+        :param query: The INSERT query string.
+        :param data: The data to be inserted into the table.
+        """
         try:
             self.cursor.execute(query, data)
             self.conn.commit()
@@ -34,5 +48,8 @@ class Database:
 
 
     def close(self):
+        """
+        Close the database cursor and connection.
+        """
         self.cursor.close()
         self.conn.close()

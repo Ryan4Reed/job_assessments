@@ -4,7 +4,7 @@
   "description": "Backend application for JobJack Assessment.",
   "main": "app.js",
   "scripts": {
-    "start": "nodemon --delay 1000ms app.js",
+    "start": "nodemon app.js",
     "dev": "nodemon --inspect app.js"
   },
   "author": "ryan4reed@gmail.com",

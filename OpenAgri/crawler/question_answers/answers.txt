@@ -1,0 +1,123 @@
+2.2.1 How many unique ships do we have data on?
+
+    Either of the identifiers named MMSI, Call Sign or IMO can you used to answer this question. 
+    Let's use them all and make sure we arive at the same answer in all three cases.
+
+    MMSI: 
+        Query used: SELECT DISTINCT COUNT(mmsi) FROM data_science.vessel_info;
+        Result: 6828
+
+    Call Sign: 
+        Query used: SELECT DISTINCT COUNT(call_sign) FROM data_science.vessel_info;
+        Result: 6828
+
+    IMO: 
+        Query used: SELECT DISTINCT COUNT(IMO) FROM data_science.vessel_info;
+        Result: 6828
+
+
+2.2.2 At present, we have data on numerous container ships. How many of these ships would be
+classified as ULCV?
+
+    My first step in answering this question was to see if a lable related to ULCV was present in the
+    detailed_type column of the vessel_info table. But the following query: 
+        
+        SELECT DISTINCT detailed_type FROM data_science.vessel_info;
+    
+    Returned the following results which did not contain such a lable:
+        
+        Tug/Supply Vessel
+        Yacht
+        Cargo/Containership
+        Fishery Patrol Vessel
+        Ro-Ro/Container Carrier
+        Heavy Load Carrier
+        Reefer
+        High Speed Craft
+        Anchor Handling Vessel
+        Ro-Ro/Passenger Ship
+        Vehicles Carrier
+        Platform
+        General Cargo
+        Offshore Supply Ship
+        Deck Cargo Ship
+        Hopper Dredger
+        Oil Products Tanker
+        Sailing Vessel
+        LNG Tanker
+        Cement Carrier
+        Crane Ship
+        Oil/Chemical Tanker
+        Livestock Carrier
+        Trenching Support Vessel
+        LPG Tanker
+        Patrol Vessel
+        Bulk Carrier
+        Crude Oil Tanker
+        Ro-Ro Cargo
+        Tug
+        Reefer/Containership
+        Container Ship
+        Fire Fighting Vessel
+        Passenger Ship
+        Chemical Tanker
+
+    My next strategy was to see if we could use the vessel characteristics available in the database 
+    (gross tonnage, DWT, length, and width) to classify a vessel as ULCV. From my research, the 
+    classification of a ship as ULCV is primarily determined by its carrying capacity in terms of 
+    Twenty-foot Equivalent Units (TEUs), which is the standard measure used for capacity in container 
+    transportation. Typically, ships with a capacity of over 10,000 or 14,000 TEUs (depending on the 
+    definition used) are considered ULCVs.
+
+    Unfortunately, the vessel characteristics in the table do not directly translate into TEUs, as 
+    the ability of a ship to carry containers also depends on its design. As a result, there's no 
+    straightforward formula to accurately calculate TEU capacity from these metrics. 
+    It seems that additional data is required to answer this question.
+
+2.2.3 After analyzing the 'ports' table, you noticed that erroneous information has been entered into
+the 'code' column. Utilizing an alternative column in the table, retrieve a list of rows where most
+'code' values are incorrect.
+
+    On first investigation of the ports table I noticed that some of the entries in the code column 
+    numeric sequences instead of letter sequences. As a result my first impression was that these were 
+    the incorrect entries. But then I read the question again and you request that we use another 
+    column in the table to identify the incorrect code values. 
+
+    So I had a look and the only usable pattern I could identify was that it seemed that the first 
+    letters in the letter sequence of the code column should match the letter sequence in the country 
+    code column. To investigate whether there were letter sequences, other then the numeric sequences 
+    that did not match the country_code sequence in this way I executed the following query:
+        
+        SELECT *
+        FROM data_science.vessel_ports
+        WHERE SUBSTRING(code FROM 1 FOR CHAR_LENGTH(country_code)) <> country_code;'
+    
+    On investigating the results I did indeed find a couple of entries where the first letters in the 
+    sequence of the code column did not match the first letters of the sequence in the country_code
+    column:
+        port                                    country         latitude    longitude   code    maxe_ships  country_code
+        ------------------------------------------------------------------------------------------------
+        GIMBOA (Offshore Terminal)	            Bahamas (BS)	-7.542833	12.16867	AOGIM	  0.0	    BS
+        SERPENTINA TERMINAL (Offshore Terminal)	Bahamas (BS)	3.802688	8.075488	GQSER	  2.0	    BS
+        OYO (Offshore Terminal)	                Panama (PA)	    2.6939575	2.295729	NGOYO	  0.0	    PA
+        YUUM KAKNAAB (Offshore Terminal)	    Singapore (SG)	19.60221	-92.29489	MXYKN	  5.0	    SG
+    
+    However, I went to check, and these codes are in fact correct. The pattern I suspected just isn't 
+    valid. As a result, I returned to my original analysis that the incorrect entries where the 
+    numeric sequences. In which case we need not use an alternative column to identify them. The
+    following query will suffice:
+        
+        SELECT *
+        FROM data_science.vessel_ports
+        WHERE code ~ '^[0-9]+$';
+
+    Here is an exert of the results:
+        port                country             latitude    longitude   code    maxe_ships  country_code
+        ------------------------------------------------------------------------------------------------
+        WILLEMSDORP	        Netherlands (NL)	51.72256	4.63025	    6	    0.0	        NL
+        WOUBRUGGE	        Netherlands (NL)	52.169445	4.633965	1	    0.0	        NL
+        ZWARTE SCHAAR	    Netherlands (NL)	52.03433	6.16341	    0	    0.0	        NL
+        LA PUNTILLA	        Spain (ES)	        28.0775	    -17.3335	2	    0.0	        ES
+        PLAYA DE FANABE	    Spain (ES)	        28.076	    -16.7385	6	    0.0	        ES
+        PUERTO DE GUINCHO	Spain (ES)	        28.0165	    -16.613	    13	    0.0	        ES
+        EL PAJARO	        Spain (ES)	        27.749	    -15.6705	1	    0.0	        ES
