@@ -87,14 +87,6 @@ To run the web crawler, execute the following command:
 
 The crawler will start fetching web pages, extracting useful data, and saving it to the local filesystem and the PostgreSQL database.
 
-## Notes
-
-- The `robots.txt` file of News24 is known to be faulty and is thus not being utilized in the current codebase. The crawler does not respect crawling restrictions specified in the `robots.txt` file.
-
-## Contributing
-
-Contributions are welcome! If you have suggestions or find any issues, please open an issue or submit a pull request.
-
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more information.
